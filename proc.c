@@ -538,3 +538,112 @@ int helloworld(void)
   cprintf("hello world\n");
   return 22;
 }
+
+int clone(int (*fn)(void *, void*), void *stack)
+{
+  int pid;
+  uint *sp;
+  struct proc *np;
+  struct proc *curproc = myproc();
+   
+  if((uint)(stack - 4096) >= curproc->process->sz || (uint)(stack) > curproc->process->sz) {
+    return -1;
+  }
+   
+  if((np = allocproc()) == 0){
+    return -1;
+  }
+   
+  np->tgid = curproc->tgid;
+  np->process = curproc->process;
+   
+  initlock(&np->vlock, "vlock");
+  struct spinlock *vlock = &(curproc->process->vlock);
+  acquire(vlock);
+  np->pgdir = curproc->pgdir;
+  np->sz = 0;
+  release(vlock);
+   
+  np->threadcount = 0;
+   
+  np->parent = curproc->parent;
+  *np->tf = *curproc->tf;
+   
+  sp = (uint *)stack;
+  sp -= 1;
+  *sp = (uint)0xffffffff;
+   
+  np->tf->eip = (uint)fn;
+  np->tf->esp = (uint)sp;
+	np->cwd = 0;
+   
+	int i;
+  for(i = 0; i < NOFILE; i++)
+    if(curproc->ofile[i])
+      np->ofile[i] = filedup(curproc->ofile[i]);
+   
+  safestrcpy(np->name, curproc->name, sizeof(curproc->name));
+   
+   
+  acquire(&ptable.lock);
+
+  np->state = RUNNABLE;
+  curproc->process->threadcount += 1;
+   
+  release(&ptable.lock);
+
+	pid = np->pid;
+  return pid;
+}
+
+
+int join(int pid)
+{
+  struct proc *p;
+  struct proc *curproc = myproc();
+
+  acquire(&ptable.lock);
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid == pid){
+      if(p->tgid == curproc->tgid && p->process == curproc->process){
+        break;
+      }
+      else{
+        release(&ptable.lock);
+        return -1;
+      }
+    }
+  }
+  
+  if(p->pid != pid){
+    release(&ptable.lock);
+    return -1;
+  }
+
+  while(p->state != ZOMBIE){
+    if(curproc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+    sleep(curproc->process, &ptable.lock);
+  }
+
+  if(p->tgid != p->pid && p != p->process){
+    kfree(p->kstack);
+    p->name[0] = 0;
+    p->killed = 0;
+    p->state = UNUSED;
+    p->process = 0;
+    p->pgdir = 0;
+    p->threadcount = 0;
+		p->kstack = 0;
+    p->context = 0;
+    p->pid = 0;
+    p->tgid = 0;
+    p->parent = 0;
+  }
+
+  release(&ptable.lock);
+  return pid;
+}
