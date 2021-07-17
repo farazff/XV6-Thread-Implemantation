@@ -4,8 +4,8 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "x86.h"
-#include "proc.h"
 #include "spinlock.h"
+#include "proc.h"
 
 struct {
   struct spinlock lock;

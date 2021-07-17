@@ -5,6 +5,7 @@
 #include "param.h"
 #include "memlayout.h"
 #include "mmu.h"
+#include "spinlock.h"
 #include "proc.h"
 
 int
@@ -94,4 +95,30 @@ int
 sys_helloworld(void)
 {
   return helloworld();
+}
+
+int
+sys_clone(void)
+{
+  int (*fn)(void *, void*);
+  void *stack;
+
+  if(argptr(0, (char **)&fn, 0) < 0)
+    return -1;
+  if(argint(1, (int *)&stack) < 0)
+    return -1;
+  if(((uint)stack) > KERNBASE || ((uint)(stack - 4096)) >= KERNBASE) // passing bad stack
+    return -1;
+
+  return clone(fn, stack);
+}
+
+int 
+sys_join(void)
+{
+  int pid;
+  if (argint(0, (int *)&pid) < 0)
+    return -1; 
+
+  return join(pid);
 }
