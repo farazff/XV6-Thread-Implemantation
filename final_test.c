@@ -3,14 +3,16 @@
 #include "user.h"
 #include "fcntl.h"
 
+int x = 0;
 int
 cottonthread(void *a, void *b)
 {
-  printf(1, "\ncotton thread!!!\n");
+  x++;
+  sleep(100);
   return 0;
 }
 
-#define NT 5
+#define NT 61
 // size of ptable.proc is 64
 // so there are 61 remaining slots after init, sh, clonetests
 // 61 threads should be created and joined
@@ -38,7 +40,7 @@ cottontest1(void)
       failed = 1;
     }
   }
-
+  printf(1, "****** x = %d *********\n", x);
   if(!failed)
     printf(1, "cotton thread test ok\n");
 

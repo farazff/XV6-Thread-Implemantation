@@ -20,7 +20,7 @@ cthread_create(cthread_t *thread, int (*fn)(void *, void *),
 
   //*(thread_stack - 12) = exit;
 
-  thread->pid = clone(fn, arg1, arg2, thread->stack + PGSIZE, 0);
+  thread->pid = clone(fn, arg1, arg2, thread->stack , 0);
   if(thread->pid == -1){
     return -1;
   }

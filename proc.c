@@ -637,7 +637,7 @@ clone(int (*fn)(void *, void*), void *arg1, void *arg2,
       void *stack, int flags)
 {
   int i, pid;
-  uint *sp;
+  //uint *sp;
   struct proc *np;
   struct proc *curproc = myproc();
    
@@ -668,7 +668,7 @@ clone(int (*fn)(void *, void*), void *arg1, void *arg2,
   struct spinlock *vlock = &(curproc->process->vlock);
   acquire(vlock);
   np->pgdir = curproc->pgdir;
-  np->sz = 0;
+  np->sz = curproc->sz;
   release(vlock);
    
   // one more thread using same address space
@@ -680,15 +680,6 @@ clone(int (*fn)(void *, void*), void *arg1, void *arg2,
    
   np->parent = curproc->parent;
   *np->tf = *curproc->tf;
-   
-  // lay out the stack for user program
-  sp = (uint *)stack;
-  sp -= 1;
-  *sp = (uint)arg2;
-  sp -= 1;
-  *sp = (uint)arg1;
-  sp -= 1;
-  *sp = (uint)0xffffffff; // temperory, should be die()
 
 
   // stack -= 4096;
@@ -741,6 +732,7 @@ clone(int (*fn)(void *, void*), void *arg1, void *arg2,
   } else {
     np->state = RUNNABLE;
     curproc->process->threadcount += 1;
+    cprintf("threadcount: %d\n", curproc->process->threadcount);
   }
    
   release(&ptable.lock);
