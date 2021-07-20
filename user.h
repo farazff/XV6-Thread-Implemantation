@@ -24,8 +24,16 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int helloworld(void);
-int clone(int (*fn)(void *, void *), void *child_stack);
+int clone(int (*fn)(void *, void*), void *arg1, void *arg2, void *stack, int flags);
 int join(int pid);
+
+// ucthreads.c
+typedef struct{
+  int pid;
+  char *stack;
+}cthread_t;
+int cthread_create(cthread_t *thread, int (*fn)(void *, void *), void *arg1, void *arg2);
+int cthread_join(cthread_t *thread);
 
 // ulib.c
 int stat(const char*, struct stat*);

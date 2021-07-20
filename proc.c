@@ -9,11 +9,6 @@
 #include "proc.h"
 #include "traps.h"
 
-struct {
-  struct spinlock lock;
-  struct proc proc[NPROC];
-} ptable;
-
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -668,6 +663,7 @@ clone(int (*fn)(void *, void*), void *arg1, void *arg2,
   np->process = curproc->process;
   np->lostwakeup = 0;
    
+
   initlock(&np->vlock, "vlock");
   struct spinlock *vlock = &(curproc->process->vlock);
   acquire(vlock);
@@ -693,11 +689,42 @@ clone(int (*fn)(void *, void*), void *arg1, void *arg2,
   *sp = (uint)arg1;
   sp -= 1;
   *sp = (uint)0xffffffff; // temperory, should be die()
+
+
+  // stack -= 4096;
+
+
+ void * sarg1, *sarg2, *sret;
+
+  // Push fake return address to the stack of thread
+  sret = stack + PGSIZE - 3 * sizeof(void *);
+  *(uint*)sret = 0xFFFFFFF;
+
+  // Push first argument to the stack of thread
+  sarg1 = stack + PGSIZE - 2 * sizeof(void *);
+  *(uint*)sarg1 = (uint)arg1;
+
+  // Push second argument to the stack of thread
+  sarg2 = stack + PGSIZE - 1 * sizeof(void *);
+  *(uint*)sarg2 = (uint)arg2;
+
+  // Put address of new stack in the stack pointer (ESP)
+  np->tf->esp = (uint) stack;
+
+  // Initialize stack pointer to appropriate address
+  np->tf->esp += PGSIZE - 3 * sizeof(void*);
+  np->tf->ebp = np->tf->esp;
+
+
+
+
+
    
   // In child, begin execution from fn, args are in stack
   np->tf->eip = (uint)fn;
-  np->tf->esp = (uint)sp;
-   
+  // np->tf->esp = (uint)sp;
+  // np->tf->ebp = np->tf->esp;
+
   for(i = 0; i < NOFILE; i++)
     if(curproc->ofile[i])
       np->ofile[i] = filedup(curproc->ofile[i]);

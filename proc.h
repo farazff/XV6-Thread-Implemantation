@@ -32,6 +32,7 @@ struct context {
   uint eip;
 };
 
+
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
@@ -62,3 +63,8 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+struct {
+  struct spinlock lock;
+  struct proc proc[NPROC];
+} ptable;
