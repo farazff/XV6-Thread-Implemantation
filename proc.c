@@ -633,7 +633,7 @@ int helloworld(void)
 }
 
 int
-clone(int (*fn)(void *, void*), void *arg1, void *arg2, 
+clone(void (*fn)(void *, void*), void *arg1, void *arg2, 
       void *stack, int flags)
 {
   int i, pid;
@@ -731,8 +731,8 @@ clone(int (*fn)(void *, void*), void *arg1, void *arg2,
     np->state = ZOMBIE;
   } else {
     np->state = RUNNABLE;
+    // cprintf("threadcount: %d\n", curproc->process->threadcount);
     curproc->process->threadcount += 1;
-    cprintf("threadcount: %d\n", curproc->process->threadcount);
   }
    
   release(&ptable.lock);

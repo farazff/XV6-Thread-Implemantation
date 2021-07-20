@@ -100,7 +100,7 @@ sys_helloworld(void)
 int
 sys_clone(void)
 {
-  int (*fn)(void *, void*);
+  void (*fn)(void *, void*);
   void *arg1;
   void *arg2;
   void *stack;

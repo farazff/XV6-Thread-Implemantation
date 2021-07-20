@@ -121,7 +121,7 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 int             helloworld(void);
-int             clone(int (*fn)(void *, void *), void *arg1, void *arg2, void *stack, int flags);
+int             clone(void (*fn)(void *, void *), void *arg1, void *arg2, void *stack, int flags);
 int             join(int pid);
 
 // swtch.S

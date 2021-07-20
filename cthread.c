@@ -4,7 +4,7 @@
 #define PGSIZE 4096
 
 int 
-cthread_create(cthread_t *thread, int (*fn)(void *, void *), 
+cthread_create(cthread_t *thread, void (*fn)(void *, void *), 
 	       void *arg1, void *arg2)
 {
   thread->stack = (char *)malloc(PGSIZE);
