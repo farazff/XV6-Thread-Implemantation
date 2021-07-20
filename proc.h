@@ -54,6 +54,7 @@ struct proc {
   int tgid;  
   struct proc *process;
   struct spinlock cwdlock;
+  void *lostwakeup;    
 };
 
 // Process memory is laid out contiguously, low addresses first:
