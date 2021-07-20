@@ -9,6 +9,7 @@ cottonthread(void *a, void *b)
 {
   x++;
   sleep(100);
+  exit();
   return 0;
 }
 
