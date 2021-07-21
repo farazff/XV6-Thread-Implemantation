@@ -24,10 +24,10 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int helloworld(void);
-int clone(void (*fn)(void *, void*), void *arg1, void *arg2, void *stack, int flags);
+int clone(void (*fn)(void *, void*), void *arg1, void *arg2, void *stack);
 int join(int pid);
 
-// ucthreads.c
+// cthreads.c
 typedef struct{
   int pid;
   char *stack;

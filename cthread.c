@@ -12,15 +12,7 @@ cthread_create(cthread_t *thread, void (*fn)(void *, void *),
     return -1;
   }
 
-  // little magic cheating here?
-  // breaking the kernel abstraction?
-  // top - 04: arg2
-  // top - 08: arg1
-  // top - 12: return address..
-
-  //*(thread_stack - 12) = exit;
-
-  thread->pid = clone(fn, arg1, arg2, thread->stack , 0);
+  thread->pid = clone(fn, arg1, arg2, thread->stack);
   if(thread->pid == -1){
     return -1;
   }

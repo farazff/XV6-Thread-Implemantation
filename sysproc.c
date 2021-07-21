@@ -104,7 +104,6 @@ sys_clone(void)
   void *arg1;
   void *arg2;
   void *stack;
-  int flags;
 
   if(argptr(0, (char **)&fn, 0) < 0)
     return -1;
@@ -114,12 +113,10 @@ sys_clone(void)
     return -1;
   if(argint(3, (int *)&stack) < 0)
     return -1;
-  if(argint(4, &flags) < 0)
-    return -1;
-  if(((uint)stack) > KERNBASE || ((uint)(stack - 4096)) >= KERNBASE) // passing bad stack
+  if(((uint)stack + PGSIZE) > KERNBASE || ((uint)(stack)) >= KERNBASE) // passing bad stack
     return -1;
 
-  return clone(fn, arg1, arg2, stack, flags);
+  return clone(fn, arg1, arg2, stack);
 }
 
 int 

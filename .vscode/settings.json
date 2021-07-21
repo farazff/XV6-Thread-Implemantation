@@ -2,6 +2,7 @@
     "files.associations": {
         "spinlock.h": "c",
         "defs.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "user.h": "c"
     }
 }

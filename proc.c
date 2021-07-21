@@ -127,7 +127,6 @@ userinit(void)
   initlock(&p->vlock, "vlock");
 
   p->threadcount = 1;
-  p->lostwakeup = 0;
   
   initproc = p;
 
@@ -147,10 +146,7 @@ userinit(void)
   p->tf->eip = 0;  // beginning of initcode.S
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
-  initlock(&p->cwdlock, "cwdlock");
-  acquire(&p->cwdlock);
   p->cwd = namei("/");
-  release(&p->cwdlock);
 
 
   // this assignment to p->state lets other cores
@@ -220,7 +216,6 @@ fork(void)
   // Thread group
   np->tgid = np->pid;
   np->process = np;
-  np->lostwakeup = 0;
 
   initlock(&np->vlock, "vlock");
   vlock = &(curproc->process->vlock);
@@ -246,14 +241,9 @@ fork(void)
     if(curproc->ofile[i])
       np->ofile[i] = filedup(curproc->ofile[i]);
   
-  acquire(&curproc->process->cwdlock);
   cwd = curproc->process->cwd;
-  release(&curproc->process->cwdlock);
 
-  initlock(&np->cwdlock, "cwdlock");
-  acquire(&np->cwdlock);
   np->cwd = idup(cwd);
-  release(&np->cwdlock);
 
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
@@ -632,16 +622,12 @@ int helloworld(void)
   return 22;
 }
 
-int clone(void (*fn)(void *, void*), void *arg1, void *arg2, void *stack, int flags)
+int clone(void (*fn)(void *, void*), void *arg1, void *arg2, void *stack)
 {
   int pid;
   struct proc *curproc = myproc();
    
   if((uint)(stack) > curproc->process->sz) {
-    return -1;
-  }
-
-  if((uint)(stack - 4096) >= curproc->process->sz) {
     return -1;
   }
 
@@ -652,7 +638,6 @@ int clone(void (*fn)(void *, void*), void *arg1, void *arg2, void *stack, int fl
    
   np->tgid = curproc->tgid;
   np->process = curproc->process;
-  np->lostwakeup = 0;
   np->threadcount = 0;
    
 
@@ -678,8 +663,7 @@ int clone(void (*fn)(void *, void*), void *arg1, void *arg2, void *stack, int fl
   sarg2 = stack + PGSIZE - 1 * sizeof(void *);
   *(uint*)sarg2 = (uint)arg2;
 
-  np->tf->esp = (uint) stack;
-  np->tf->esp += PGSIZE - 3 * sizeof(void*);
+  np->tf->esp = (uint) stack + PGSIZE - ( 3 * sizeof(void *));
 
   np->tf->ebp = np->tf->esp;
   np->tf->eip = (uint)fn;
@@ -724,11 +708,6 @@ int join(int pid)
         return -1;
       }
     }
-  }
-  
-  if(p->pid != pid){
-    release(&ptable.lock);
-    return -1;
   }
 
   while(p->state != ZOMBIE){
