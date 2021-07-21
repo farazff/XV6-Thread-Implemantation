@@ -632,36 +632,28 @@ int helloworld(void)
   return 22;
 }
 
-int
-clone(void (*fn)(void *, void*), void *arg1, void *arg2, 
-      void *stack, int flags)
+int clone(void (*fn)(void *, void*), void *arg1, void *arg2, void *stack, int flags)
 {
-  int i, pid;
-  //uint *sp;
-  struct proc *np;
+  int pid;
   struct proc *curproc = myproc();
    
-  // anyway, not touching anything below stack - 12
-  // lock: this and the stack defererence for setup
-  if((uint)(stack - 4096) >= curproc->process->sz || (uint)(stack) > curproc->process->sz) {
+  if((uint)(stack) > curproc->process->sz) {
+    return -1;
+  }
+
+  if((uint)(stack - 4096) >= curproc->process->sz) {
+    return -1;
+  }
+
+  struct proc *np = allocproc(); 
+  if(np == 0){
     return -1;
   }
    
-  // page-aligned stack: malloc() does not guarentee,
-  // if ((PGROUNDDOWN((int)stack) != (int)stack))
-  //  return -1;
-   
-  //stack += 4096; // top of the stack
-   
-  // Allocate process.
-  if((np = allocproc()) == 0){
-    return -1;
-  }
-   
-  // Thread group
   np->tgid = curproc->tgid;
   np->process = curproc->process;
   np->lostwakeup = 0;
+  np->threadcount = 0;
    
 
   initlock(&np->vlock, "vlock");
@@ -671,51 +663,28 @@ clone(void (*fn)(void *, void*), void *arg1, void *arg2,
   np->sz = curproc->sz;
   release(vlock);
    
-  // one more thread using same address space
-  // invariant: when exiting this system call
-  // the threadcount will be equal to the number
-  // of threads using the pgdir of the thread group
-  // leader
-  np->threadcount = 0;
-   
   np->parent = curproc->parent;
   *np->tf = *curproc->tf;
 
 
-  // stack -= 4096;
+  void * sarg1, *sarg2, *sret;
 
-
- void * sarg1, *sarg2, *sret;
-
-  // Push fake return address to the stack of thread
   sret = stack + PGSIZE - 3 * sizeof(void *);
   *(uint*)sret = 0xFFFFFFF;
 
-  // Push first argument to the stack of thread
   sarg1 = stack + PGSIZE - 2 * sizeof(void *);
   *(uint*)sarg1 = (uint)arg1;
 
-  // Push second argument to the stack of thread
   sarg2 = stack + PGSIZE - 1 * sizeof(void *);
   *(uint*)sarg2 = (uint)arg2;
 
-  // Put address of new stack in the stack pointer (ESP)
   np->tf->esp = (uint) stack;
-
-  // Initialize stack pointer to appropriate address
   np->tf->esp += PGSIZE - 3 * sizeof(void*);
+
   np->tf->ebp = np->tf->esp;
-
-
-
-
-
-   
-  // In child, begin execution from fn, args are in stack
   np->tf->eip = (uint)fn;
-  // np->tf->esp = (uint)sp;
-  // np->tf->ebp = np->tf->esp;
 
+  int i;
   for(i = 0; i < NOFILE; i++)
     if(curproc->ofile[i])
       np->ofile[i] = filedup(curproc->ofile[i]);
@@ -727,25 +696,17 @@ clone(void (*fn)(void *, void*), void *arg1, void *arg2,
    
   acquire(&ptable.lock);
    
-  if (curproc->killed) {
-    np->state = ZOMBIE;
-  } else {
-    np->state = RUNNABLE;
-    // cprintf("threadcount: %d\n", curproc->process->threadcount);
-    curproc->process->threadcount += 1;
-  }
+  np->state = RUNNABLE;
+  // cprintf("threadcount: %d\n", curproc->process->threadcount);
+  curproc->process->threadcount += 1;
    
   release(&ptable.lock);
    
   return pid;
 }
 
-// if thread with pid = *pid* is in the same thread group
-// wait of it to exit, and reap it
-// if thread is the thread group leader, do not reap it
-// return the *pid* If no such thread exists, return -1
-int
-join(int pid)
+
+int join(int pid)
 {
   struct proc *p;
   struct proc *curproc = myproc();
