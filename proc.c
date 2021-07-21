@@ -708,11 +708,12 @@ int clone(void (*fn)(void *, void*), void *arg1, void *arg2, void *stack, int fl
 
 int join(int pid)
 {
-  struct proc *p;
   struct proc *curproc = myproc();
 
   acquire(&ptable.lock);
 
+
+  struct proc *p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid == pid){
       if(p->tgid == curproc->tgid && p->process == curproc->process){
@@ -738,20 +739,24 @@ int join(int pid)
     sleep(curproc->process, &ptable.lock);
   }
 
-  if(p->tgid != p->pid && p != p->process){
-    kfree(p->kstack);
-    p->kstack = 0;
-    p->context = 0;
-    p->pid = 0;
-    p->tgid = 0;
-    p->parent = 0;
-    p->name[0] = 0;
-    p->killed = 0;
-    p->state = UNUSED;
-    p->process = 0;
-    p->pgdir = 0;
-    p->threadcount = 0;
+  if(p->tgid == p->pid || p == p->process)
+  {
+    release(&ptable.lock);
+    return pid; 
   }
+
+  kfree(p->kstack);
+  p->name[0] = 0;
+  p->killed = 0;
+  p->state = UNUSED;
+  p->process = 0;
+  p->pgdir = 0;
+  p->threadcount = 0;
+  p->kstack = 0;
+  p->context = 0;
+  p->pid = 0;
+  p->tgid = 0;
+  p->parent = 0;
 
   release(&ptable.lock);
   return pid;
