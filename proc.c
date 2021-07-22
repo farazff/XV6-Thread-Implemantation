@@ -718,12 +718,6 @@ int join(int pid)
     sleep(curproc->process, &ptable.lock);
   }
 
-  if(p->tgid == p->pid || p == p->process)
-  {
-    release(&ptable.lock);
-    return pid; 
-  }
-
   kfree(p->kstack);
   p->name[0] = 0;
   p->killed = 0;
