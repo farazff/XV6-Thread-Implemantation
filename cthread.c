@@ -11,7 +11,9 @@ cthread_create(cthread_t *thread, void (*fn)(void *, void *),
   if(thread->stack == 0){
     return -1;
   }
-
+  if((uint) thread->stack % PGSIZE != 0){
+    return -1;
+  }
   thread->pid = clone(fn, arg1, arg2, thread->stack);
   if(thread->pid == -1){
     return -1;
